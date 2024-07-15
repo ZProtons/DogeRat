@@ -83,6 +83,11 @@ const actions = [
     '✯ Decrypt ✯'
 ];
 
+// Define a root route to handle the "Cannot GET /" issue
+app.get('/', (req, res) => {
+    res.send('Server is running');
+});
+
 // Define other necessary endpoints and handlers here
 
 server.listen(data.PORT, () => {
