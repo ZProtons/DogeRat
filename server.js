@@ -14,21 +14,31 @@ const data = JSON.parse(fs.readFileSync('./data.json', 'utf8'));
 let bot;
 let isInitializing = false;
 
-const stopBot = (callback) => {
-    if (bot) {
-        bot.stopPolling()
-            .then(() => {
-                console.log('Bot polling stopped');
-                callback();
-            })
-            .catch((err) => {
-                console.error('Error stopping bot:', err);
-                callback();
-            });
-    } else {
-        callback();
+let botInstance = null;
+
+const startBot = () => {
+    if (!botInstance) {
+        botInstance = new TelegramBot(data.token, { polling: true });
+
+        botInstance.on('polling_error', (error) => {
+            console.error(`Polling error: ${error.code} - ${error.message}`);
+            if (error.code === 'ETELEGRAM' && error.response.body.error_code === 409) {
+                console.log('Reinitializing bot after 409 Conflict error...');
+                setTimeout(startBot, 5000); // Retry after 5 seconds
+            }
+        });
+
+        botInstance.on('message', (msg) => {
+            // Handle Telegram bot messages here
+        });
+
+        botInstance.on('ready', () => {
+            console.log('Bot is ready');
+        });
     }
 };
+
+startBot();
 
 const initializeBot = () => {
     if (isInitializing) return;
