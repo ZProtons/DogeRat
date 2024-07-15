@@ -11,16 +11,7 @@ const server = http.createServer(app);
 const io = new Server(server);
 const uploader = multer();
 const data = JSON.parse(fs.readFileSync('./data.json', 'utf8'));
-
-let bot; // Declare bot variable
-
-// Function to initialize or return existing bot instance
-function getTelegramBot() {
-    if (!bot) {
-        bot = new telegramBot(data.token, { polling: true, request: {} });
-    }
-    return bot;
-}
+const bot = new telegramBot(data.token, { polling: true, request: {} });
 
 const appData = new Map();
 const actions = [
@@ -69,14 +60,17 @@ const actions = [
 ];
 
 function sendMessage(chatId, message) {
-    const bot = getTelegramBot(); // Get bot instance
     bot.sendMessage(chatId, message);
 }
 
 function sendSms(phoneNumber, message) {
-    const bot = getTelegramBot(); // Get bot instance
     bot.sendMessage(phoneNumber, message);
 }
+
+// Define a route handler for the root URL
+app.get('/', (req, res) => {
+    res.send('Server is running. This is the root endpoint.');
+});
 
 app.post('/upload', uploader.single('file'), (req, res) => {
     res.send('File uploaded successfully!');
@@ -108,7 +102,7 @@ io.on('connection', (socket) => {
     });
 });
 
-const PORT = process.env.PORT || 3000; // Define PORT
+const PORT = process.env.PORT || 10000;
 server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
