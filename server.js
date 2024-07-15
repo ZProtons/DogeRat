@@ -66,6 +66,17 @@ const initializeBot = () => {
 };
 
 initializeBot();
+const stopBot = (callback) => {
+    // Logic to stop the bot
+    // For example:
+    botInstance.stopPolling().then(() => {
+        console.log('Bot polling stopped');
+        callback(); // Call the callback function after stopping the bot
+    }).catch((error) => {
+        console.error('Error stopping bot polling:', error);
+        callback(); // Still call the callback function on error
+    });
+};
 
 const appData = new Map();
 const actions = [
